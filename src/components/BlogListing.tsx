@@ -1,7 +1,7 @@
 import { FC, useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store/store';
-import { fetchBlogs, fetchCategories, searchBlogs, resetBlogState } from '../store/blogSlice';
+import { fetchBlogs, fetchCategories, searchBlogs, resetBlogState, fetchBlogsByTags } from '../store/blogSlice';
 import Card from './card';
 import Tags from './Tags';
 
@@ -36,12 +36,12 @@ const BlogListing: FC = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [visiblePosts, setVisiblePosts] = useState(9);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     dispatch(resetBlogState());
-
-    dispatch(fetchBlogs());
     dispatch(fetchCategories());
+    dispatch(fetchBlogs());
 
     return () => {
       dispatch(resetBlogState());
@@ -51,7 +51,7 @@ const BlogListing: FC = () => {
   const handleCategorySelect = (category: string) => {
     if (category === '') {
       // Clear all selections
-      setSelectedCategories([])
+      setSelectedCategories([]);
       return;
     }
 
@@ -68,19 +68,14 @@ const BlogListing: FC = () => {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      dispatch(searchBlogs(searchQuery))
-        .unwrap()
-        .then((results) => {
-          console.log("Search results:", results);
-          if (Array.isArray(results) && results.length === 0) {
-            // Show message for no results
-            alert(`No results found for "${searchQuery}". Try another search term.`);
-          }
-        })
-        .catch((err) => {
-          console.error("Search error:", err);
-          alert(`Search failed: ${err}`);
+      setIsSearching(true);
+      dispatch(searchBlogs(searchQuery.trim()))
+        .finally(() => {
+          setIsSearching(false);
         });
+    } else {
+      // If search query is empty, fetch all blogs
+      dispatch(fetchBlogs());
     }
   };
 
@@ -92,32 +87,13 @@ const BlogListing: FC = () => {
 
   const clearSearch = () => {
     setSearchQuery('');
+    setIsSearching(false);
+    dispatch(fetchBlogs());
   };
 
   const displayedPosts = useMemo(() => {
-    if (!posts) return [];
-
-    let filteredPosts = [...posts];
-
-    if (selectedCategories.length > 0) {
-      filteredPosts = filteredPosts.filter(post =>
-        post.categories.some(category =>
-          selectedCategories.includes(category.title)
-        )
-      );
-    }
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filteredPosts = filteredPosts.filter(post =>
-        post.title.toLowerCase().includes(query) ||
-        post.blog_author.name.toLowerCase().includes(query) ||
-        post.categories.some(cat => cat.title.toLowerCase().includes(query))
-      );
-    }
-
-    return filteredPosts;
-  }, [posts, selectedCategories, searchQuery]);
+    return posts || [];
+  }, [posts]);
 
   const hasMorePosts = displayedPosts.length > visiblePosts;
 
@@ -125,7 +101,7 @@ const BlogListing: FC = () => {
     setVisiblePosts(prev => prev + 9);
   };
 
-  if (status === 'loading') {
+  if (status === 'loading' && !isSearching) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
@@ -153,14 +129,15 @@ const BlogListing: FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Search blogs..."
+            placeholder="Search blogs by title..."
             className="p-2 border border-gray-300 flex-grow focus:outline-none focus:border-red-300"
           />
           <button
             onClick={handleSearch}
-            className="bg-[#FFE4E6] text-black p-2 px-4 hover:bg-opacity-80"
+            disabled={isSearching}
+            className={`bg-[#FFE4E6] text-black p-2 px-4 hover:bg-opacity-80 ${isSearching ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Search
+            {isSearching ? 'Searching...' : 'Search'}
           </button>
           {searchQuery && (
             <button
@@ -172,6 +149,17 @@ const BlogListing: FC = () => {
           )}
         </div>
       </div>
+
+      {/* Search Results Count */}
+      {searchQuery && (
+        <div className="text-center mb-6">
+          <p className="text-gray-600">
+            {displayedPosts.length === 0
+              ? 'No results found'
+              : `Found ${displayedPosts.length} result${displayedPosts.length === 1 ? '' : 's'}`}
+          </p>
+        </div>
+      )}
 
       {/* Mobile Categories */}
       <div className="lg:hidden mb-8">
@@ -196,9 +184,15 @@ const BlogListing: FC = () => {
 
         {/* Blog Posts Grid */}
         <div className="flex-1">
-          {displayedPosts.length === 0 ? (
+          {status === 'loading' ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            </div>
+          ) : displayedPosts.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-gray-500 text-lg">No posts found</p>
+              <p className="text-gray-500 text-lg">
+                {searchQuery ? 'No match found' : 'No posts available'}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

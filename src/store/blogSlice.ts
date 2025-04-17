@@ -169,22 +169,10 @@ export const searchBlogs = createAsyncThunk(
     'blogs/searchBlogs',
     async (query: string, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`http://192.168.1.6:1337/api/blogs/search?q=${encodeURIComponent(query)}`);
-            const data = response.data.data || response.data;
-
-            // Check if response is valid and contains data
-            if (!data || (Array.isArray(data) && data.length === 0)) {
-                return [];
-            }
-
-            return data;
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs?title=${encodeURIComponent(query)}`);
+            return response.data.data || response.data;
         } catch (error: any) {
-            console.error("Search API error:", error);
-            if (error.response && error.response.data.message) {
-                return rejectWithValue(error.response.data.message);
-            } else {
-                return rejectWithValue('Failed to search blogs. Please try again.');
-            }
+            return rejectWithValue('Failed to search blogs');
         }
     }
 );
@@ -286,28 +274,19 @@ const blogSlice = createSlice({
                     return post;
                 });
             })
+            .addCase(searchBlogs.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
             .addCase(searchBlogs.fulfilled, (state, action) => {
-                state.searchResults = Array.isArray(action.payload)
-                    ? action.payload.map((post: any) => {
-                        if (post.attributes) {
-                            const blogAuthor = post.attributes.blog_author || {};
-                            return {
-                                ...post.attributes,
-                                id: post.id,
-                                blog_author: {
-                                    ...blogAuthor,
-                                    avtar: blogAuthor.avtar
-                                }
-                            };
-                        }
-                        return post;
-                    })
-                    : [];
+                state.status = 'succeeded';
+                state.posts = action.payload;
+                state.error = null;
             })
             .addCase(searchBlogs.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to search blogs';
-                state.searchResults = [];
+                state.posts = [];
             })
             .addCase(fetchBlogsByTags.pending, (state) => {
                 state.status = 'loading';
