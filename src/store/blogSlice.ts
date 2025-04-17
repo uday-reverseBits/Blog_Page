@@ -1,0 +1,314 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
+
+export interface BlogPost {
+    id: number;
+    documentId: string;
+    title: string;
+    createdAt: string;
+    publishedAt: string;
+    updatedAt?: string;
+    slug: string;
+    blog_author: {
+        id: number;
+        documentId: string;
+        name: string;
+        avatar: {
+            id?: number;
+            documentId?: string;
+            url?: string | null
+        };
+        linkedin_url?: string | null;
+        medium_url?: string | null;
+        dev_to_url?: string | null;
+    };
+    categories: Array<{
+        id: number;
+        documentId: string;
+        title: string;
+        order: number;
+    }>;
+    cover_image: {
+        id?: number;
+        documentId?: string;
+        url?: string | null;
+    };
+    content?: string;
+}
+
+interface BlogState {
+    posts: BlogPost[];
+    categories: Array<{
+        id: number;
+        documentId: string;
+        title: string;
+        order: number;
+    }>;
+    status: 'idle' | 'loading' | 'succeeded' | 'failed';
+    error: string | null;
+    currentPost: BlogPost | null;
+    authorPosts: BlogPost[];
+    searchResults: BlogPost[];
+}
+
+const initialState: BlogState = {
+    posts: [],
+    categories: [],
+    status: 'idle',
+    error: null,
+    currentPost: null,
+    authorPosts: [],
+    searchResults: []
+};
+
+export const fetchBlogs = createAsyncThunk(
+    'blogs/fetchBlogs',
+    async () => {
+        const response = await axios.get('http://192.168.1.6:1337/api/blogs');
+        return response.data.data || response.data;
+    }
+);
+
+export const fetchCategories = createAsyncThunk(
+    'blogs/fetchCategories',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await axios.get('http://192.168.1.6:1337/api/blog-categories');
+            return response.data.data || response.data;
+        } catch (error: any) {
+            if (error.response && error.response.data.message) {
+                return rejectWithValue(error.response.data.message);
+            } else {
+                return rejectWithValue('Failed to fetch categories. Please try again.');
+            }
+        }
+    }
+);
+
+export const fetchBlogBySlug = createAsyncThunk(
+    'blogs/fetchBlogBySlug',
+    async (slug: string, { rejectWithValue }) => {
+        try {
+            // First try with the /slug/ endpoint format
+            try {
+                const response = await axios.get(`http://192.168.1.6:1337/api/blogs/slug/${slug}`);
+                const data = response.data.data || response.data;
+                if (data) {
+                    if (data.attributes) {
+                        return {
+                            ...data.attributes,
+                            id: data.id
+                        };
+                    }
+                    return data;
+                }
+            } catch (innerError) {
+                console.log('First endpoint format failed, trying alternative format');
+            }
+
+            // If first attempt fails, try direct slug lookup (without /slug/ in path)
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs/${slug}`);
+            const data = response.data.data || response.data;
+
+            if (!data) {
+                return rejectWithValue('Blog post not found');
+            }
+
+            // Normalize the response structure
+            if (data.attributes) {
+                return {
+                    ...data.attributes,
+                    id: data.id
+                };
+            }
+            return data;
+        } catch (error: any) {
+            console.error('Error fetching blog by slug:', error);
+            if (error.response) {
+                console.error('Response data:', error.response.data);
+                if (error.response.data.message) {
+                    return rejectWithValue(error.response.data.message);
+                }
+            }
+            return rejectWithValue('Failed to fetch blog post');
+        }
+    }
+);
+
+export const fetchBlogsByCategory = createAsyncThunk(
+    'blogs/fetchBlogsByCategory',
+    async (categoryId: number) => {
+        const response = await axios.get(`http://192.168.1.6:1337/api/blogs/category/${categoryId}`);
+        return response.data.data || response.data;
+    }
+);
+
+export const fetchBlogsByAuthor = createAsyncThunk(
+    'blogs/fetchBlogsByAuthor',
+    async (authorId: number, { rejectWithValue }) => {
+        try {
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs/author/${authorId}`);
+            const data = response.data.data || response.data;
+
+            if (Array.isArray(data) && data.length > 0) {
+                return data;
+            } else {
+                return rejectWithValue('No posts found for this author');
+            }
+        } catch (error: any) {
+            if (error.response && error.response.data.message) {
+                return rejectWithValue(error.response.data.message);
+            } else {
+                return rejectWithValue('Failed to fetch author posts. Please try again.');
+            }
+        }
+    }
+);
+
+export const searchBlogs = createAsyncThunk(
+    'blogs/searchBlogs',
+    async (query: string, { rejectWithValue }) => {
+        try {
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs/search?q=${encodeURIComponent(query)}`);
+            const data = response.data.data || response.data;
+
+            // Check if response is valid and contains data
+            if (!data || (Array.isArray(data) && data.length === 0)) {
+                return [];
+            }
+
+            return data;
+        } catch (error: any) {
+            console.error("Search API error:", error);
+            if (error.response && error.response.data.message) {
+                return rejectWithValue(error.response.data.message);
+            } else {
+                return rejectWithValue('Failed to search blogs. Please try again.');
+            }
+        }
+    }
+);
+
+const blogSlice = createSlice({
+    name: 'blogs',
+    initialState,
+    reducers: {
+        resetBlogState: (state) => {
+            state.status = 'idle';
+            state.currentPost = null;
+            state.error = null;
+        },
+        clearAuthorPosts: (state) => {
+            state.authorPosts = [];
+        },
+        clearSearchResults: (state) => {
+            state.searchResults = [];
+        }
+    },
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchBlogs.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(fetchBlogs.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.posts = action.payload.map((post: any) => {
+                    if (post.attributes) {
+                        const blogAuthor = post.attributes.blog_author || {};
+                        return {
+                            ...post.attributes,
+                            id: post.id,
+                            blog_author: {
+                                ...blogAuthor,
+                                avtar: blogAuthor.avtar
+                            }
+                        };
+                    }
+                    return post;
+                });
+            })
+            .addCase(fetchBlogs.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Failed to fetch blogs';
+            })
+            .addCase(fetchCategories.fulfilled, (state, action) => {
+                state.categories = action.payload.map((category: any) => {
+                    if (category.attributes) {
+                        return {
+                            ...category.attributes,
+                            id: category.id
+                        };
+                    }
+                    return category;
+                });
+            })
+            .addCase(fetchBlogBySlug.pending, (state) => {
+                state.status = 'loading';
+                console.log('Loading blog post...');
+            })
+            .addCase(fetchBlogBySlug.fulfilled, (state, action) => {
+                console.log('Blog post data received:', action.payload);
+                state.status = 'succeeded';
+                state.currentPost = action.payload;
+            })
+            .addCase(fetchBlogBySlug.rejected, (state, action) => {
+                console.error('Blog post fetch failed:', action.error);
+                state.status = 'failed';
+                state.error = action.error.message || 'Failed to fetch blog';
+            })
+            .addCase(fetchBlogsByCategory.fulfilled, (state, action) => {
+                state.posts = action.payload.map((post: any) => {
+                    if (post.attributes) {
+                        return {
+                            ...post.attributes,
+                            id: post.id
+                        };
+                    }
+                    return post;
+                });
+            })
+            .addCase(fetchBlogsByAuthor.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.authorPosts = action.payload.map((post: any) => {
+                    if (post.attributes) {
+                        const blogAuthor = post.attributes.blog_author || {};
+                        return {
+                            ...post.attributes,
+                            id: post.id,
+                            blog_author: {
+                                ...blogAuthor,
+                                avtar: blogAuthor.avtar
+                            }
+                        };
+                    }
+                    return post;
+                });
+            })
+            .addCase(searchBlogs.fulfilled, (state, action) => {
+                state.searchResults = Array.isArray(action.payload)
+                    ? action.payload.map((post: any) => {
+                        if (post.attributes) {
+                            const blogAuthor = post.attributes.blog_author || {};
+                            return {
+                                ...post.attributes,
+                                id: post.id,
+                                blog_author: {
+                                    ...blogAuthor,
+                                    avtar: blogAuthor.avtar
+                                }
+                            };
+                        }
+                        return post;
+                    })
+                    : [];
+            })
+            .addCase(searchBlogs.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Failed to search blogs';
+                state.searchResults = [];
+            });
+    }
+});
+
+export const { resetBlogState, clearAuthorPosts, clearSearchResults } = blogSlice.actions;
+export default blogSlice.reducer; 

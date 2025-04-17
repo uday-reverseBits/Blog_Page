@@ -1,0 +1,244 @@
+import { FC, useState, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store/store';
+import { fetchBlogs, fetchCategories, searchBlogs, resetBlogState } from '../store/blogSlice';
+import Card from './card';
+import Tags from './Tags';
+
+export interface BlogPost {
+  id: number;
+  documentId: string;
+  title: string;
+  createdAt: string;
+  publishedAt: string;
+  slug: string;
+  blog_author: {
+    id: number;
+    documentId: string;
+    name: string;
+    avatar: { url?: string | null };
+    linkedin_url?: string | null;
+    medium_url?: string | null;
+    dev_to_url?: string | null;
+  };
+  categories: Array<{
+    id: number;
+    documentId: string;
+    title: string;
+    order: number;
+  }>;
+  cover_image: { url?: string | null };
+}
+
+const BlogListing: FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { posts, categories, searchResults, status, error } = useSelector((state: RootState) => state.blogs);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [visiblePosts, setVisiblePosts] = useState(6);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchBlogs());
+    dispatch(fetchCategories());
+    return () => {
+      dispatch(resetBlogState());
+    };
+  }, [dispatch]);
+
+  const handleCategorySelect = (category: string) => {
+    if (category === '') {
+      // Clear all selections
+      setSelectedCategories([])
+      return;
+    }
+
+    setSelectedCategories(prev => {
+      if (prev.includes(category)) {
+        // Remove category if already selected
+        return prev.filter(c => c !== category);
+      } else {
+        // Add category if not selected
+        return [...prev, category];
+      }
+    });
+  };
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      setIsSearching(true);
+      dispatch(searchBlogs(searchQuery))
+        .unwrap()
+        .then((results) => {
+          console.log("Search results:", results);
+          if (Array.isArray(results) && results.length === 0) {
+            // Show message for no results
+            alert(`No results found for "${searchQuery}". Try another search term.`);
+          }
+        })
+        .catch((err) => {
+          console.error("Search error:", err);
+          alert(`Search failed: ${err}`);
+          setIsSearching(false);
+        });
+    } else {
+      setIsSearching(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setIsSearching(false);
+  };
+
+  const displayedPosts = useMemo(() => {
+    if (isSearching) return searchResults;
+
+    if (selectedCategories.length === 0) return posts;
+    return posts.filter(post =>
+      post.categories.some(category => selectedCategories.includes(category.title))
+    );
+  }, [selectedCategories, posts, searchResults, isSearching]);
+
+  const hasMorePosts = displayedPosts.length > visiblePosts;
+
+  const loadMore = () => {
+    setVisiblePosts(prev => prev + 6);
+  };
+
+  if (status === 'loading' && !isSearching) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      </div>
+    );
+  }
+
+  if (status === 'failed' && !isSearching) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500">Error: {error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">Blog Posts</h1>
+
+      {/* Search Bar */}
+      <div className="mb-8 max-w-xl mx-auto">
+        <div className="flex">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Search blogs..."
+            className="p-2 border border-gray-300 flex-grow focus:outline-none focus:border-red-300"
+          />
+          <button
+            onClick={handleSearch}
+            className="bg-[#FFE4E6] text-black p-2 px-4 hover:bg-opacity-80"
+          >
+            Search
+          </button>
+          {isSearching && (
+            <button
+              onClick={clearSearch}
+              className="bg-gray-200 text-black p-2 px-4 hover:bg-opacity-80"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isSearching && (
+        <div className="text-center mb-8">
+          <p className="text-gray-700">
+            {searchResults.length} results found for "{searchQuery}"
+          </p>
+        </div>
+      )}
+
+      {/* Mobile Categories */}
+      <div className="lg:hidden mb-8">
+        <Tags
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onSelectCategory={handleCategorySelect}
+        />
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Desktop Categories */}
+        <div className="hidden lg:block w-64 flex-shrink-0">
+          <div className="sticky top-8">
+            <Tags
+              categories={categories}
+              selectedCategories={selectedCategories}
+              onSelectCategory={handleCategorySelect}
+            />
+          </div>
+        </div>
+
+        {/* Blog Posts Grid */}
+        <div className="flex-1">
+          {displayedPosts.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-500 text-lg">No posts found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {displayedPosts.slice(0, visiblePosts).map((post: BlogPost) => {
+                console.log('Blog post slug:', post.slug);
+
+                return (
+                  <Card
+                    key={post.id}
+                    author={{
+                      name: post.blog_author.name,
+                      image: post.blog_author.avtar.url ? `http://192.168.1.6:1337${post.blog_author.avtar.url}` : '/default-avatar.png'
+                    }}
+                    date={new Date(post.publishedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                    title={post.title.replace(/^#\s+/, '')}
+                    description=""
+                    image={post.cover_image.url ? `http://192.168.1.6:1337${post.cover_image.url}` : '/default-cover.png'}
+                    categories={post.categories.map(cat => cat.title)}
+                    slug={post.slug}
+                    authorId={post.blog_author.id}
+                    blogData={post}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {hasMorePosts && (
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={loadMore}
+                className="px-6 py-2 bg-[#FFE4E6] text-black hover:bg-opacity-80 transition-colors"
+              >
+                Load More
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BlogListing; 

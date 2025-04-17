@@ -1,0 +1,178 @@
+import { FC, useEffect, useState, useRef } from 'react';
+import { Link } from 'react-scroll';
+
+interface TableOfContentsProps {
+    headings: Array<{
+        id: string;
+        title: string;
+        level: number;
+    }>;
+}
+
+interface TreeNode {
+    id: string;
+    title: string;
+    level: number;
+    children: TreeNode[];
+}
+
+const buildHeadingTree = (headings: TableOfContentsProps['headings']): TreeNode[] => {
+    const root: TreeNode[] = [];
+    const stack: TreeNode[] = [];
+
+    headings.forEach((heading) => {
+        const node: TreeNode = {
+            ...heading,
+            children: [],
+        };
+
+        while (stack.length > 0 && stack[stack.length - 1].level >= heading.level) {
+            stack.pop();
+        }
+
+        if (stack.length === 0) {
+            root.push(node);
+        } else {
+            stack[stack.length - 1].children.push(node);
+        }
+
+        stack.push(node);
+    });
+
+    return root;
+};
+
+const RenderTreeNode: FC<{ node: TreeNode; activeId: string }> = ({ node, activeId }) => {
+    const isActive = activeId === node.id;
+
+    return (
+        <li className="relative">
+            <Link
+                to={node.id}
+                spy={true}
+                smooth={true}
+                offset={-100}
+                duration={300}
+                isDynamic={true}
+                className={`block py-2 pl-4 cursor-pointer transition-colors duration-300 text-gray-600 hover:text-gray-900 relative ${isActive ? 'text-red-600 font-bold' : ''}`}
+                activeClass="!text-red-600 font-bold before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-red-600"
+                hashSpy={true}
+                spyThrottle={50}
+            >
+                {node.title}
+            </Link>
+            {node.children.length > 0 && (
+                <ul className="ml-4">
+                    {node.children.map((child) => (
+                        <RenderTreeNode key={child.id} node={child} activeId={activeId} />
+                    ))}
+                </ul>
+            )}
+        </li>
+    );
+};
+
+const TableOfContents: FC<TableOfContentsProps> = ({ headings }) => {
+    const tree = buildHeadingTree(headings);
+    const [activeId, setActiveId] = useState<string>('');
+    const observerRef = useRef<IntersectionObserver | null>(null);
+    const headingElementsRef = useRef<{ [key: string]: IntersectionObserverEntry }>({});
+
+    useEffect(() => {
+        // Clean up old observers
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+        }
+
+        if (headings.length === 0) return;
+
+        // Set up intersection observer for each heading
+        const callback: IntersectionObserverCallback = (entries) => {
+            // Store all entries
+            entries.forEach(entry => {
+                headingElementsRef.current[entry.target.id] = entry;
+            });
+
+            // Get all headings that are currently visible
+            const visibleHeadings = Object.values(headingElementsRef.current)
+                .filter(entry => entry.isIntersecting);
+
+            if (visibleHeadings.length > 0) {
+                // Sort by their position on the page (top to bottom)
+                const sortedVisibleHeadings = visibleHeadings.sort(
+                    (a, b) => a.boundingClientRect.top - b.boundingClientRect.top
+                );
+
+                // Get the ID of the first visible heading
+                const firstVisibleHeadingId = sortedVisibleHeadings[0].target.id;
+
+                if (firstVisibleHeadingId && firstVisibleHeadingId !== activeId) {
+                    setActiveId(firstVisibleHeadingId);
+                }
+            } else if (headings.length > 0 && !activeId) {
+                // If no headings are visible but we have headings, use the first one
+                setActiveId(headings[0].id);
+            }
+        };
+
+        // Configure the observer with more sensitive threshold values
+        const options: IntersectionObserverInit = {
+            rootMargin: '-20px 0px -70% 0px',
+            threshold: [0, 0.25, 0.5, 0.75, 1]
+        };
+
+        // Create and store the observer
+        observerRef.current = new IntersectionObserver(callback, options);
+
+        // Add padding to headings and observe them
+        headings.forEach(heading => {
+            const element = document.getElementById(heading.id);
+            if (element) {
+                // Add padding to improve detection
+                if (element.tagName === 'H1' || element.tagName === 'H2' || element.tagName === 'H3') {
+                    element.style.scrollMarginTop = '100px';
+                    element.style.paddingTop = '20px';
+                }
+
+                // Observe the heading
+                observerRef.current?.observe(element);
+            }
+        });
+
+        // Set initial active heading
+        if (headings.length > 0 && !activeId) {
+            setActiveId(headings[0].id);
+        }
+
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+        };
+    }, [headings]);
+
+    if (headings.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-xl font-bold mb-4 bg-black text-white p-4">Table of contents</h2>
+            <nav
+                className="max-h-[calc(100vh-200px)] overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 
+                [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-track]:rounded-full
+                [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full
+                [&::-webkit-scrollbar-thumb]:hover:bg-gray-400 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400
+                scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+            >
+                <ul className="space-y-1">
+                    {tree.map((node) => (
+                        <RenderTreeNode key={node.id} node={node} activeId={activeId} />
+                    ))}
+                </ul>
+            </nav>
+        </div>
+    );
+};
+
+export default TableOfContents; 
