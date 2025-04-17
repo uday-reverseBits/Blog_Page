@@ -189,17 +189,30 @@ export const searchBlogs = createAsyncThunk(
     }
 );
 
+export const fetchBlogsByTags = createAsyncThunk(
+    'blogs/fetchBlogsByTags',
+    async (tags: string[], { rejectWithValue }) => {
+        try {
+            const tagsQuery = tags.length > 0 ? `?tags=${tags.join(',')}` : '';
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs${tagsQuery}`);
+            return response.data.data || response.data;
+        } catch (error: any) {
+            if (error.response && error.response.data.message) {
+                return rejectWithValue(error.response.data.message);
+            }
+            return rejectWithValue('Failed to fetch blogs by tags');
+        }
+    }
+);
+
 const blogSlice = createSlice({
     name: 'blogs',
     initialState,
     reducers: {
         resetBlogState: (state) => {
-            state.status = 'idle';
             state.currentPost = null;
+            state.status = 'idle';
             state.error = null;
-        },
-        clearAuthorPosts: (state) => {
-            state.authorPosts = [];
         },
         clearSearchResults: (state) => {
             state.searchResults = [];
@@ -209,23 +222,12 @@ const blogSlice = createSlice({
         builder
             .addCase(fetchBlogs.pending, (state) => {
                 state.status = 'loading';
+                state.error = null;
             })
             .addCase(fetchBlogs.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.posts = action.payload.map((post: any) => {
-                    if (post.attributes) {
-                        const blogAuthor = post.attributes.blog_author || {};
-                        return {
-                            ...post.attributes,
-                            id: post.id,
-                            blog_author: {
-                                ...blogAuthor,
-                                avtar: blogAuthor.avtar
-                            }
-                        };
-                    }
-                    return post;
-                });
+                state.posts = action.payload;
+                state.error = null;
             })
             .addCase(fetchBlogs.rejected, (state, action) => {
                 state.status = 'failed';
@@ -244,17 +246,17 @@ const blogSlice = createSlice({
             })
             .addCase(fetchBlogBySlug.pending, (state) => {
                 state.status = 'loading';
-                console.log('Loading blog post...');
+                state.error = null;
             })
             .addCase(fetchBlogBySlug.fulfilled, (state, action) => {
-                console.log('Blog post data received:', action.payload);
                 state.status = 'succeeded';
                 state.currentPost = action.payload;
+                state.error = null;
             })
             .addCase(fetchBlogBySlug.rejected, (state, action) => {
-                console.error('Blog post fetch failed:', action.error);
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to fetch blog';
+                state.currentPost = null;
             })
             .addCase(fetchBlogsByCategory.fulfilled, (state, action) => {
                 state.posts = action.payload.map((post: any) => {
@@ -306,9 +308,22 @@ const blogSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to search blogs';
                 state.searchResults = [];
+            })
+            .addCase(fetchBlogsByTags.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(fetchBlogsByTags.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.posts = action.payload;
+                state.error = null;
+            })
+            .addCase(fetchBlogsByTags.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Failed to fetch blogs by tags';
             });
     }
 });
 
-export const { resetBlogState, clearAuthorPosts, clearSearchResults } = blogSlice.actions;
+export const { resetBlogState, clearSearchResults } = blogSlice.actions;
 export default blogSlice.reducer; 

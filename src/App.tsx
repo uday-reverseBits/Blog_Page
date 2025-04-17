@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
@@ -8,12 +8,20 @@ import AuthorPage from './components/AuthorPage';
 import './App.css'
 
 const App: FC = () => {
+  useEffect(() => {
+    console.log('App component mounted');
+  }, []);
+
   return (
     <Provider store={store}>
       <Router>
         <div className="min-h-screen bg-gray-50">
           <Routes>
-            <Route path="/" element={<BlogListing />} />
+            <Route path="/" element={
+              <div>
+                <BlogListing />
+              </div>
+            } />
             <Route path="/blog/:slug" element={<BlogDetail />} />
             <Route path="/author/:authorId" element={<AuthorPage />} />
           </Routes>

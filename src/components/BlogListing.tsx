@@ -32,15 +32,17 @@ export interface BlogPost {
 
 const BlogListing: FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { posts, categories, searchResults, status, error } = useSelector((state: RootState) => state.blogs);
+  const { posts, categories, status, error } = useSelector((state: RootState) => state.blogs);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [visiblePosts, setVisiblePosts] = useState(6);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [visiblePosts, setVisiblePosts] = useState(9);
 
   useEffect(() => {
+    dispatch(resetBlogState());
+
     dispatch(fetchBlogs());
     dispatch(fetchCategories());
+
     return () => {
       dispatch(resetBlogState());
     };
@@ -66,7 +68,6 @@ const BlogListing: FC = () => {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      setIsSearching(true);
       dispatch(searchBlogs(searchQuery))
         .unwrap()
         .then((results) => {
@@ -79,10 +80,7 @@ const BlogListing: FC = () => {
         .catch((err) => {
           console.error("Search error:", err);
           alert(`Search failed: ${err}`);
-          setIsSearching(false);
         });
-    } else {
-      setIsSearching(false);
     }
   };
 
@@ -94,25 +92,40 @@ const BlogListing: FC = () => {
 
   const clearSearch = () => {
     setSearchQuery('');
-    setIsSearching(false);
   };
 
   const displayedPosts = useMemo(() => {
-    if (isSearching) return searchResults;
+    if (!posts) return [];
 
-    if (selectedCategories.length === 0) return posts;
-    return posts.filter(post =>
-      post.categories.some(category => selectedCategories.includes(category.title))
-    );
-  }, [selectedCategories, posts, searchResults, isSearching]);
+    let filteredPosts = [...posts];
+
+    if (selectedCategories.length > 0) {
+      filteredPosts = filteredPosts.filter(post =>
+        post.categories.some(category =>
+          selectedCategories.includes(category.title)
+        )
+      );
+    }
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filteredPosts = filteredPosts.filter(post =>
+        post.title.toLowerCase().includes(query) ||
+        post.blog_author.name.toLowerCase().includes(query) ||
+        post.categories.some(cat => cat.title.toLowerCase().includes(query))
+      );
+    }
+
+    return filteredPosts;
+  }, [posts, selectedCategories, searchQuery]);
 
   const hasMorePosts = displayedPosts.length > visiblePosts;
 
   const loadMore = () => {
-    setVisiblePosts(prev => prev + 6);
+    setVisiblePosts(prev => prev + 9);
   };
 
-  if (status === 'loading' && !isSearching) {
+  if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
@@ -120,7 +133,7 @@ const BlogListing: FC = () => {
     );
   }
 
-  if (status === 'failed' && !isSearching) {
+  if (status === 'failed') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-red-500">Error: {error}</div>
@@ -149,7 +162,7 @@ const BlogListing: FC = () => {
           >
             Search
           </button>
-          {isSearching && (
+          {searchQuery && (
             <button
               onClick={clearSearch}
               className="bg-gray-200 text-black p-2 px-4 hover:bg-opacity-80"
@@ -159,14 +172,6 @@ const BlogListing: FC = () => {
           )}
         </div>
       </div>
-
-      {isSearching && (
-        <div className="text-center mb-8">
-          <p className="text-gray-700">
-            {searchResults.length} results found for "{searchQuery}"
-          </p>
-        </div>
-      )}
 
       {/* Mobile Categories */}
       <div className="lg:hidden mb-8">
@@ -200,12 +205,20 @@ const BlogListing: FC = () => {
               {displayedPosts.slice(0, visiblePosts).map((post: BlogPost) => {
                 console.log('Blog post slug:', post.slug);
 
+                const avatarUrl = post.blog_author?.avatar?.url
+                  ? `http://192.168.1.6:1337${post.blog_author.avatar.url}`
+                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.blog_author.name)}&background=FFE4E6&color=000`;
+
+                const coverUrl = post.cover_image?.url
+                  ? `http://192.168.1.6:1337${post.cover_image.url}`
+                  : `https://placehold.co/600x400/FFE4E6/000000/png?text=${encodeURIComponent(post.title)}`;
+
                 return (
                   <Card
                     key={post.id}
                     author={{
                       name: post.blog_author.name,
-                      image: post.blog_author.avtar.url ? `http://192.168.1.6:1337${post.blog_author.avtar.url}` : '/default-avatar.png'
+                      image: avatarUrl
                     }}
                     date={new Date(post.publishedAt).toLocaleDateString('en-US', {
                       year: 'numeric',
@@ -214,7 +227,7 @@ const BlogListing: FC = () => {
                     })}
                     title={post.title.replace(/^#\s+/, '')}
                     description=""
-                    image={post.cover_image.url ? `http://192.168.1.6:1337${post.cover_image.url}` : '/default-cover.png'}
+                    image={coverUrl}
                     categories={post.categories.map(cat => cat.title)}
                     slug={post.slug}
                     authorId={post.blog_author.id}

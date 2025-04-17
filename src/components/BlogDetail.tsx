@@ -252,7 +252,10 @@ const BlogDetail: FC = () => {
       );
     },
     p: ({ children }) => (
-      <p className="mb-4 leading-relaxed">{children}</p>
+      <p className="mb-4 leading-relaxed whitespace-pre-wrap">{children}</p>
+    ),
+    pre: ({ children }) => (
+      <pre className="whitespace-pre-wrap overflow-x-auto">{children}</pre>
     ),
     ul: ({ children }) => (
       <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>
@@ -297,11 +300,10 @@ const BlogDetail: FC = () => {
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               {post.title.replace(/^#\s+/, '')}
             </h1>
-
             {/* Author and Date */}
             <div className="flex items-center justify-center space-x-4 mb-6">
               <Link to={`/author/${post.blog_author.id}`} className="flex items-center mr-4">
-                {post.blog_author.avatar?.url ? (
+                {post?.blog_author?.avatar?.url ? (
                   <img
                     src={`http://192.168.1.6:1337${post.blog_author.avatar.url}`}
                     alt={post.blog_author.name}

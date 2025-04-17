@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store/store';
-import { fetchBlogsByAuthor, clearAuthorPosts } from '../store/blogSlice';
+import { fetchBlogsByAuthor } from '../store/blogSlice';
 import Card from './card';
 
 interface Author {
@@ -47,10 +47,6 @@ const AuthorPage: FC = () => {
                     setAttemptedLoad(true);
                 });
         }
-
-        return () => {
-            dispatch(clearAuthorPosts());
-        };
     }, [authorId, dispatch]);
 
     const getSocialLinks = (): SocialLink[] => {
