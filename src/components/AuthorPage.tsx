@@ -197,7 +197,7 @@ const AuthorPage: FC = () => {
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* Desktop Categories - Sidebar */}
                         <div className="hidden lg:block w-64 flex-shrink-0">
-                            <div className="sticky top-8">
+                            <div className="sticky top-8 mt-[280px]">
                                 <Tags
                                     categories={categories}
                                     selectedCategories={selectedCategories}
@@ -256,18 +256,18 @@ const AuthorPage: FC = () => {
                                 </div>
                             </div>
 
-                            {/* Mobile Categories */}
-                            <div className="lg:hidden mb-8">
-                                <Tags
-                                    categories={categories}
-                                    selectedCategories={selectedCategories}
-                                    onSelectCategory={handleCategorySelect}
-                                />
-                            </div>
-
                             {/* Posts Section */}
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Posts by {author.name}</h2>
+
+                                {/* Mobile Categories */}
+                                <div className="lg:hidden mb-8">
+                                    <Tags
+                                        categories={categories}
+                                        selectedCategories={selectedCategories}
+                                        onSelectCategory={handleCategorySelect}
+                                    />
+                                </div>
 
                                 {authorPosts.length === 0 ? (
                                     <div className="text-center py-10">
