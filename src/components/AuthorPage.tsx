@@ -33,6 +33,7 @@ const AuthorPage: FC = () => {
     const { authorPosts, status, error } = useSelector((state: RootState) => state.blogs);
     const [author, setAuthor] = useState<Author | null>(null);
     const [attemptedLoad, setAttemptedLoad] = useState(false);
+    const [visiblePosts, setVisiblePosts] = useState(6);
 
     useEffect(() => {
         if (authorSlug) {
@@ -50,6 +51,12 @@ const AuthorPage: FC = () => {
                 });
         }
     }, [authorSlug, dispatch]);
+
+    const loadMore = () => {
+        setVisiblePosts(prev => prev + 6);
+    };
+
+    const hasMorePosts = authorPosts.length > visiblePosts;
 
     const getSocialLinks = (): SocialLink[] => {
         const links: SocialLink[] = [];
@@ -138,7 +145,7 @@ const AuthorPage: FC = () => {
 
     return (
         <div className="container mx-auto px-4 py-12">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-7xl mx-auto">
                 {author && (
                     <>
                         {/* Author Profile */}
@@ -189,28 +196,41 @@ const AuthorPage: FC = () => {
                                     <p className="text-gray-500 text-lg">No posts found</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {authorPosts.map((post) => (
-                                        <Card
-                                            key={post.id}
-                                            author={{
-                                                name: author.name,
-                                                image: author.avatar?.url ? `http://192.168.1.6:1337${author.avatar.url}` : '/default-avatar.png'
-                                            }}
-                                            date={new Date(post.publishedAt).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            })}
-                                            title={post.title.replace(/^#\s+/, '')}
-                                            description=""
-                                            image={post.cover_image?.url ? `http://192.168.1.6:1337${post.cover_image.url}` : '/default-cover.jpg'}
-                                            categories={post.categories.map(cat => cat.title)}
-                                            slug={post.slug}
-                                            authorId={author.id}
-                                        />
-                                    ))}
-                                </div>
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                        {authorPosts.slice(0, visiblePosts).map((post) => (
+                                            <Card
+                                                key={post.id}
+                                                author={{
+                                                    name: author.name,
+                                                    image: author.avatar?.url ? `http://192.168.1.6:1337${author.avatar.url}` : '/default-avatar.png'
+                                                }}
+                                                date={new Date(post.publishedAt).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric'
+                                                })}
+                                                title={post.title.replace(/^#\s+/, '')}
+                                                description=""
+                                                image={post.cover_image?.url ? `http://192.168.1.6:1337${post.cover_image.url}` : '/default-cover.jpg'}
+                                                categories={post.categories.map(cat => cat.title)}
+                                                slug={post.slug}
+                                                authorId={author.id}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {hasMorePosts && (
+                                        <div className="flex justify-center mt-8">
+                                            <button
+                                                onClick={loadMore}
+                                                className="px-6 py-2 bg-[#FFE4E6] text-black hover:bg-opacity-80 transition-colors"
+                                            >
+                                                Load More
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </>
