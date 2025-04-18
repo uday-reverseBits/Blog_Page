@@ -332,19 +332,13 @@ const BlogDetail: FC = () => {
                     {post.blog_author.name}
                   </Link>
                   <div className="text-gray-500 text-sm">
-                    {post.updatedAt ? (
-                      <>Updated: {new Date(post.updatedAt).toLocaleDateString('en-US', {
+                    {post.publishedAt ? (
+                      <>Published : {new Date(post.publishedAt).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
                       })}</>
-                    ) : (
-                      <>Published: {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}</>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -393,7 +387,7 @@ const BlogDetail: FC = () => {
           {/* Social Share and Author Links */}
           <div className="flex items-center justify-between mt-12 pt-6 border-t border-gray-200">
             <div className="flex gap-2">
-              <span className="text-sm font-medium text-gray-500">Tags:</span>
+              {/* <span className="text-sm font-medium text-gray-500">Tags:</span>
               {post.categories.map((category) => (
                 <span
                   key={category.id}
@@ -401,8 +395,19 @@ const BlogDetail: FC = () => {
                 >
                   #{category.title}
                 </span>
-              ))}
+              ))} */}
+              <div className="text-gray-500 text-sm ms-2">
+
+                {post.updatedAt ? (
+                  <>Last updated : {new Date(post.updatedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}</>
+                ) : null}
+              </div>
             </div>
+
 
             {socialLinks.length > 0 && (
               <div className="flex gap-4">
@@ -420,6 +425,7 @@ const BlogDetail: FC = () => {
                 ))}
               </div>
             )}
+
           </div>
         </article>
       </div>
