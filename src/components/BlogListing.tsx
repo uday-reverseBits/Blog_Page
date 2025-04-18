@@ -60,6 +60,11 @@ const BlogListing: FC = () => {
     };
   }, [dispatch]);
 
+  // Reset pagination when tags change
+  useEffect(() => {
+    setVisiblePosts(6);
+  }, [selectedCategories]);
+
   const handleCategorySelect = (category: string) => {
     if (category === '') {
       // Clear all selections and fetch all blogs
@@ -87,6 +92,7 @@ const BlogListing: FC = () => {
   const handleSearch = () => {
     if (searchQuery.trim()) {
       setIsSearching(true);
+      setVisiblePosts(6); // Reset pagination when searching
       dispatch(searchBlogs(searchQuery.trim()))
         .finally(() => {
           setIsSearching(false);
@@ -106,6 +112,7 @@ const BlogListing: FC = () => {
   const clearSearch = () => {
     setSearchQuery('');
     setIsSearching(false);
+    setVisiblePosts(6); // Reset pagination when clearing search
     dispatch(fetchBlogs());
   };
 
