@@ -23,7 +23,7 @@ const App: FC = () => {
               </div>
             } />
             <Route path="/blog/:slug" element={<BlogDetail />} />
-            <Route path="/author/:authorId" element={<AuthorPage />} />
+            <Route path="/author/:authorSlug" element={<AuthorPage />} />
           </Routes>
         </div>
       </Router>

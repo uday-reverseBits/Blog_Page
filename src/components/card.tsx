@@ -17,7 +17,9 @@ interface CardProps {
     categories: string[];
     slug: string;
     authorId?: number;
+    authorSlug?: string;
     blogData?: BlogPost;
+    isFromBlogDetail?: boolean;
 }
 
 const TagIcon = () => (
@@ -42,7 +44,7 @@ const TagIcon = () => (
     </svg>
 );
 
-const Card: FC<CardProps> = ({ author, date, title, description, image, categories, slug, authorId, blogData }) => {
+const Card: FC<CardProps> = ({ author, date, title, description, image, categories, slug, authorSlug, blogData, isFromBlogDetail }) => {
     const content = (
         <div className="bg-white rounded-lg overflow-hidden shadow-lg transition-transform duration-300 hover:transform hover:scale-105 h-full flex flex-col">
             <div className="relative h-48 w-full overflow-hidden bg-gray-200 flex items-center justify-center">
@@ -62,36 +64,40 @@ const Card: FC<CardProps> = ({ author, date, title, description, image, categori
             </div>
             <div className="p-6 flex-grow flex flex-col">
                 <div className="flex items-center space-x-4 mb-4">
-                    <Link to={authorId ? `/author/${authorId}` : '#'} className="block">
-                        {author.image ? (
+                    <div className="flex-shrink-0">
+                        <Link
+                            to={!isFromBlogDetail && authorSlug ? `/author/${authorSlug}` : '#'}
+                            className={!isFromBlogDetail ? "block" : "cursor-default"}
+                        >
                             <img
                                 src={author.image}
                                 alt={author.name}
-                                className="w-10 h-10 rounded-full object-cover bg-gray-200"
+                                className="h-10 w-10 rounded-full"
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
                                     const parentElement = target.parentElement;
                                     if (parentElement) {
                                         const placeholder = document.createElement('div');
-                                        placeholder.className = 'w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600';
+                                        placeholder.className = 'h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600';
                                         placeholder.textContent = author.name.charAt(0).toUpperCase();
-                                        parentElement.appendChild(placeholder);
+                                        parentElement.insertBefore(placeholder, target);
                                     }
                                 }}
                             />
-                        ) : (
-                            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
-                                {author.name.charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                    </Link>
-                    <div className="flex items-center space-x-2">
-                        <Link to={authorId ? `/author/${authorId}` : '#'} className="text-gray-700 hover:text-red-500">
-                            {author.name}
                         </Link>
-                        <span className="text-gray-400">•</span>
-                        <span className="text-gray-500">{date}</span>
+                    </div>
+                    <div className="ml-3">
+                        <div className="flex items-center space-x-2">
+                            <Link
+                                to={!isFromBlogDetail && authorSlug ? `/author/${authorSlug}` : '#'}
+                                className={!isFromBlogDetail ? "text-gray-700 hover:text-red-500" : "text-gray-700 cursor-default"}
+                            >
+                                {author.name}
+                            </Link>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-500">{date}</span>
+                        </div>
                     </div>
                 </div>
                 <div className="mb-3 flex flex-wrap gap-2">

@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store/store';
-import { fetchBlogsByAuthor } from '../store/blogSlice';
+import { fetchBlogsByAuthorSlug } from '../store/blogSlice';
 import Card from './card';
 
 interface Author {
@@ -16,6 +16,8 @@ interface Author {
     linkedin_url?: string | null;
     medium_url?: string | null;
     dev_to_url?: string | null;
+    author_intro?: string | null;
+    slug?: string;
 }
 
 interface SocialLink {
@@ -25,7 +27,7 @@ interface SocialLink {
 }
 
 const AuthorPage: FC = () => {
-    const { authorId } = useParams<{ authorId: string }>();
+    const { authorSlug } = useParams<{ authorSlug: string }>();
     const navigate = useNavigate();
     const dispatch = useDispatch<AppDispatch>();
     const { authorPosts, status, error } = useSelector((state: RootState) => state.blogs);
@@ -33,8 +35,8 @@ const AuthorPage: FC = () => {
     const [attemptedLoad, setAttemptedLoad] = useState(false);
 
     useEffect(() => {
-        if (authorId) {
-            dispatch(fetchBlogsByAuthor(parseInt(authorId)))
+        if (authorSlug) {
+            dispatch(fetchBlogsByAuthorSlug(authorSlug))
                 .unwrap()
                 .then((posts) => {
                     if (posts && posts.length > 0 && posts[0].blog_author) {
@@ -47,7 +49,7 @@ const AuthorPage: FC = () => {
                     setAttemptedLoad(true);
                 });
         }
-    }, [authorId, dispatch]);
+    }, [authorSlug, dispatch]);
 
     const getSocialLinks = (): SocialLink[] => {
         const links: SocialLink[] = [];
@@ -140,7 +142,7 @@ const AuthorPage: FC = () => {
                 {author && (
                     <>
                         {/* Author Profile */}
-                        <div className="flex flex-col items-center mb-16">
+                        <div className="flex flex-col items-center mb-16 text-center">
                             <img
                                 src={author.avtar?.url ? `http://192.168.1.6:1337${author.avtar.url}` : '/default-avatar.png'}
                                 alt={author.name}
@@ -149,8 +151,7 @@ const AuthorPage: FC = () => {
                             <h1 className="text-3xl font-bold text-gray-900 mb-4">{author.name}</h1>
 
                             {/* Social Links */}
-                            <div className="flex space-x-4 mb-6">
-                                {/* {clg} */}
+                            <div className="flex justify-center space-x-4 mb-6">
                                 {getSocialLinks().map((link, index) => (
                                     <a
                                         key={index}
@@ -164,6 +165,13 @@ const AuthorPage: FC = () => {
                                     </a>
                                 ))}
                             </div>
+
+                            {/* Author Description */}
+                            {author.author_intro && (
+                                <div className="max-w-2xl mx-auto mb-8 text-gray-600">
+                                    <p className="text-lg leading-relaxed">{author.author_intro}</p>
+                                </div>
+                            )}
 
                             <div className="flex space-x-4">
                                 <Link to="/" className="bg-gray-200 text-black px-4 py-2 hover:bg-gray-300 transition-colors">

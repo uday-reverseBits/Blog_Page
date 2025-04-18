@@ -302,12 +302,12 @@ const BlogDetail: FC = () => {
             </h1>
             {/* Author and Date */}
             <div className="flex items-center justify-center space-x-4 mb-6">
-              <Link to={`/author/${post.blog_author.id}`} className="flex items-center mr-4">
+              <div className="flex items-center">
                 {post?.blog_author?.avatar?.url ? (
                   <img
                     src={`http://192.168.1.6:1337${post.blog_author.avatar.url}`}
                     alt={post.blog_author.name}
-                    className="w-12 h-12 rounded-full mr-3"
+                    className="w-12 h-12 rounded-full mr-3 cursor-default"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
@@ -321,12 +321,12 @@ const BlogDetail: FC = () => {
                     }}
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-3">
+                  <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 mr-3 cursor-default">
                     {post.blog_author.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <span className="text-gray-800 font-medium">{post.blog_author.name}</span>
+                  <span className="text-gray-800 font-medium block cursor-default">{post.blog_author.name}</span>
                   <div className="text-gray-500 text-sm">
                     {post.updatedAt ? (
                       <>Updated: {new Date(post.updatedAt).toLocaleDateString('en-US', {
@@ -343,7 +343,7 @@ const BlogDetail: FC = () => {
                     )}
                   </div>
                 </div>
-              </Link>
+              </div>
             </div>
 
             {/* Categories */}

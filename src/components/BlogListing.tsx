@@ -11,15 +11,22 @@ export interface BlogPost {
   title: string;
   createdAt: string;
   publishedAt: string;
+  updatedAt?: string;
   slug: string;
   blog_author: {
     id: number;
     documentId: string;
     name: string;
-    avatar: { url?: string | null };
+    avatar: {
+      id?: number;
+      documentId?: string;
+      url?: string | null
+    };
     linkedin_url?: string | null;
     medium_url?: string | null;
     dev_to_url?: string | null;
+    author_intro?: string | null;
+    slug: string;
   };
   categories: Array<{
     id: number;
@@ -27,7 +34,12 @@ export interface BlogPost {
     title: string;
     order: number;
   }>;
-  cover_image: { url?: string | null };
+  cover_image: {
+    id?: number;
+    documentId?: string;
+    url?: string | null;
+  };
+  content?: string;
 }
 
 const BlogListing: FC = () => {
@@ -224,8 +236,9 @@ const BlogListing: FC = () => {
                     image={coverUrl}
                     categories={post.categories.map(cat => cat.title)}
                     slug={post.slug}
-                    authorId={post.blog_author.id}
+                    authorSlug={post.blog_author.slug}
                     blogData={post}
+                    isFromBlogDetail={false}
                   />
                 );
               })}

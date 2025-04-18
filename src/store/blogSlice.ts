@@ -21,6 +21,8 @@ export interface BlogPost {
         linkedin_url?: string | null;
         medium_url?: string | null;
         dev_to_url?: string | null;
+        author_intro?: string | null;
+        slug?: string;
     };
     categories: Array<{
         id: number;
@@ -193,6 +195,28 @@ export const fetchBlogsByTags = createAsyncThunk(
     }
 );
 
+export const fetchBlogsByAuthorSlug = createAsyncThunk(
+    'blogs/fetchBlogsByAuthorSlug',
+    async (authorSlug: string, { rejectWithValue }) => {
+        try {
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs?author=${authorSlug}`);
+            const data = response.data.data || response.data;
+
+            if (Array.isArray(data) && data.length > 0) {
+                return data;
+            } else {
+                return rejectWithValue('No posts found for this author');
+            }
+        } catch (error: any) {
+            if (error.response && error.response.data.message) {
+                return rejectWithValue(error.response.data.message);
+            } else {
+                return rejectWithValue('Failed to fetch author posts. Please try again.');
+            }
+        }
+    }
+);
+
 const blogSlice = createSlice({
     name: 'blogs',
     initialState,
@@ -300,6 +324,20 @@ const blogSlice = createSlice({
             .addCase(fetchBlogsByTags.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to fetch blogs by tags';
+            })
+            .addCase(fetchBlogsByAuthorSlug.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(fetchBlogsByAuthorSlug.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.authorPosts = action.payload;
+                state.error = null;
+            })
+            .addCase(fetchBlogsByAuthorSlug.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Failed to fetch author posts';
+                state.authorPosts = [];
             });
     }
 });
