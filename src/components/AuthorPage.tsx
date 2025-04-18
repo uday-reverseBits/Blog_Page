@@ -19,6 +19,7 @@ interface Author {
     dev_to_url?: string | null;
     author_intro?: string | null;
     slug?: string;
+    designation?: string;
 }
 
 interface SocialLink {
@@ -182,48 +183,77 @@ const AuthorPage: FC = () => {
     return (
         <div className="container mx-auto px-4 py-12">
             <div className="max-w-7xl mx-auto">
+                {/* Back to Blog button */}
+                <div className="mb-12">
+                    <Link
+                        to="/"
+                        className="inline-flex items-center px-6 py-2 bg-gray-100 text-black hover:bg-gray-200 transition-colors rounded-md"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 mr-2"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                        >
+                            <path
+                                fillRule="evenodd"
+                                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                                clipRule="evenodd"
+                            />
+                        </svg>
+                        Back to Blog
+                    </Link>
+                </div>
+
                 {author && (
                     <>
-                        {/* Author Profile */}
-                        <div className="flex flex-col items-center mb-16 text-center">
-                            <img
-                                src={`http://192.168.1.6:1337${author.avatar.url}`}
-                                alt={author.name}
-                                className="w-32 h-32 rounded-full object-cover mb-6"
-                            />
-                            <h1 className="text-3xl font-bold text-gray-900 mb-4">{author.name}</h1>
-
-                            {/* Social Links */}
-                            <div className="flex justify-center space-x-4 mb-6">
-                                {getSocialLinks().map((link, index) => (
-                                    <a
-                                        key={index}
-                                        href={link.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-gray-600 hover:text-red-500 transition-colors"
-                                        title={link.label}
-                                    >
-                                        {link.icon}
-                                    </a>
-                                ))}
+                        {/* Author Profile - Horizontal Layout */}
+                        <div className="flex items-start gap-12 mb-16">
+                            {/* Author Avatar */}
+                            <div className="flex-shrink-0">
+                                <img
+                                    src={`http://192.168.1.6:1337${author.avatar.url}`}
+                                    alt={author.name}
+                                    className="w-32 h-32 rounded-full object-cover"
+                                />
                             </div>
 
-                            {/* Author Description */}
-                            {author.author_intro && (
-                                <div className="max-w-2xl mx-auto mb-8 text-gray-600">
-                                    <p className="text-lg leading-relaxed">{author.author_intro}</p>
-                                </div>
-                            )}
+                            {/* Author Details */}
+                            <div className="flex-grow">
+                                {/* Author Name */}
+                                <h1 className="text-4xl font-bold text-gray-900 mb-4">{author.name}</h1>
 
-                            <div className="flex space-x-4">
-                                <Link to="/" className="bg-gray-200 text-black px-4 py-2 hover:bg-gray-300 transition-colors">
-                                    Back to Blog
-                                </Link>
+                                {/* Social Links */}
+                                <div className="flex gap-6 mb-4">
+                                    {getSocialLinks().map((link, index) => (
+                                        <a
+                                            key={index}
+                                            href={link.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-gray-600 hover:text-red-500 transition-colors w-8 h-8 flex items-center justify-center"
+                                            title={link.label}
+                                        >
+                                            {link.icon}
+                                        </a>
+                                    ))}
+                                </div>
+
+                                {/* Designation */}
+                                <div className="text-xl text-gray-600 mb-4">
+                                    {author.designation || "Full-Stack Developer"}
+                                </div>
+
+                                {/* Author Description */}
+                                {author.author_intro && (
+                                    <div className="text-gray-600">
+                                        <p className="text-lg leading-relaxed">{author.author_intro}</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* Author's Posts with Tags Filter */}
+                        {/* Author's Posts section */}
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">Posts by {author.name}</h2>
 
