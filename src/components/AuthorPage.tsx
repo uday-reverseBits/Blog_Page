@@ -8,7 +8,7 @@ import Card from './card';
 interface Author {
     id: number;
     name: string;
-    avtar: {
+    avatar: {
         id?: number;
         documentId?: string;
         url?: string | null
@@ -144,7 +144,7 @@ const AuthorPage: FC = () => {
                         {/* Author Profile */}
                         <div className="flex flex-col items-center mb-16 text-center">
                             <img
-                                src={author.avtar?.url ? `http://192.168.1.6:1337${author.avtar.url}` : '/default-avatar.png'}
+                                src={`http://192.168.1.6:1337${author.avatar.url}`}
                                 alt={author.name}
                                 className="w-32 h-32 rounded-full object-cover mb-6"
                             />
@@ -195,7 +195,7 @@ const AuthorPage: FC = () => {
                                             key={post.id}
                                             author={{
                                                 name: author.name,
-                                                image: author.avtar?.url ? `http://192.168.1.6:1337${author.avtar.url}` : '/default-avatar.png'
+                                                image: author.avatar?.url ? `http://192.168.1.6:1337${author.avatar.url}` : '/default-avatar.png'
                                             }}
                                             date={new Date(post.publishedAt).toLocaleDateString('en-US', {
                                                 year: 'numeric',

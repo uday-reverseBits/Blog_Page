@@ -147,35 +147,35 @@ export const fetchBlogBySlug = createAsyncThunk(
     }
 );
 
-export const fetchBlogsByCategory = createAsyncThunk(
-    'blogs/fetchBlogsByCategory',
-    async (categoryId: number) => {
-        const response = await axios.get(`http://192.168.1.6:1337/api/blogs/category/${categoryId}`);
-        return response.data.data || response.data;
-    }
-);
+// export const fetchBlogsByCategory = createAsyncThunk(
+//     'blogs/fetchBlogsByCategory',
+//     async (categoryId: number) => {
+//         const response = await axios.get(`http://192.168.1.6:1337/api/blogs/category/${categoryId}`);
+//         return response.data.data || response.data;
+//     }
+// );
 
-export const fetchBlogsByAuthor = createAsyncThunk(
-    'blogs/fetchBlogsByAuthor',
-    async (authorId: number, { rejectWithValue }) => {
-        try {
-            const response = await axios.get(`http://192.168.1.6:1337/api/blogs/author/${authorId}`);
-            const data = response.data.data || response.data;
+// export const fetchBlogsByAuthor = createAsyncThunk(
+//     'blogs/fetchBlogsByAuthor',
+//     async (authorId: number, { rejectWithValue }) => {
+//         try {
+//             const response = await axios.get(`http://192.168.1.6:1337/api/blogs/author/${authorId}`);
+//             const data = response.data.data || response.data;
 
-            if (Array.isArray(data) && data.length > 0) {
-                return data;
-            } else {
-                return rejectWithValue('No posts found for this author');
-            }
-        } catch (error: any) {
-            if (error.response && error.response.data.message) {
-                return rejectWithValue(error.response.data.message);
-            } else {
-                return rejectWithValue('Failed to fetch author posts. Please try again.');
-            }
-        }
-    }
-);
+//             if (Array.isArray(data) && data.length > 0) {
+//                 return data;
+//             } else {
+//                 return rejectWithValue('No posts found for this author');
+//             }
+//         } catch (error: any) {
+//             if (error.response && error.response.data.message) {
+//                 return rejectWithValue(error.response.data.message);
+//             } else {
+//                 return rejectWithValue('Failed to fetch author posts. Please try again.');
+//             }
+//         }
+//     }
+// );
 
 export const searchBlogs = createAsyncThunk(
     'blogs/searchBlogs',
@@ -193,8 +193,9 @@ export const fetchBlogsByTags = createAsyncThunk(
     'blogs/fetchBlogsByTags',
     async (tags: string[], { rejectWithValue }) => {
         try {
-            const tagsQuery = tags.length > 0 ? `?tags=${tags.join(',')}` : '';
-            const response = await axios.get(`http://192.168.1.6:1337/api/blogs${tagsQuery}`);
+            // Convert tags array to comma-separated string and add to query params
+            const tagsParam = tags.join(',');
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs?tags=${tagsParam}`);
             return response.data.data || response.data;
         } catch (error: any) {
             if (error.response && error.response.data.message) {
@@ -209,7 +210,7 @@ export const fetchBlogsByAuthorSlug = createAsyncThunk(
     'blogs/fetchBlogsByAuthorSlug',
     async (authorSlug: string, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`http://192.168.1.6:1337/api/blogs?filters[blog_author][slug][$eq]=${authorSlug}`);
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs?author=${authorSlug}`);
             const data = response.data.data || response.data;
 
             if (Array.isArray(data) && data.length > 0) {
@@ -288,34 +289,34 @@ const blogSlice = createSlice({
                 state.error = action.error.message || 'Failed to fetch blog';
                 state.currentPost = null;
             })
-            .addCase(fetchBlogsByCategory.fulfilled, (state, action) => {
-                state.posts = action.payload.map((post: any) => {
-                    if (post.attributes) {
-                        return {
-                            ...post.attributes,
-                            id: post.id
-                        };
-                    }
-                    return post;
-                });
-            })
-            .addCase(fetchBlogsByAuthor.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.authorPosts = action.payload.map((post: any) => {
-                    if (post.attributes) {
-                        const blogAuthor = post.attributes.blog_author || {};
-                        return {
-                            ...post.attributes,
-                            id: post.id,
-                            blog_author: {
-                                ...blogAuthor,
-                                avtar: blogAuthor.avtar
-                            }
-                        };
-                    }
-                    return post;
-                });
-            })
+            // .addCase(fetchBlogsByCategory.fulfilled, (state, action) => {
+            //     state.posts = action.payload.map((post: any) => {
+            //         if (post.attributes) {
+            //             return {
+            //                 ...post.attributes,
+            //                 id: post.id
+            //             };
+            //         }
+            //         return post;
+            //     });
+            // })
+            // .addCase(fetchBlogsByAuthor.fulfilled, (state, action) => {
+            //     state.status = 'succeeded';
+            //     state.authorPosts = action.payload.map((post: any) => {
+            //         if (post.attributes) {
+            //             const blogAuthor = post.attributes.blog_author || {};
+            //             return {
+            //                 ...post.attributes,
+            //                 id: post.id,
+            //                 blog_author: {
+            //                     ...blogAuthor,
+            //                     avtar: blogAuthor.avtar
+            //                 }
+            //             };
+            //         }
+            //         return post;
+            //     });
+            // })
             .addCase(searchBlogs.pending, (state) => {
                 state.status = 'loading';
                 state.error = null;

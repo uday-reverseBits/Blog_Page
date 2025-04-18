@@ -47,7 +47,7 @@ const BlogListing: FC = () => {
   const { posts, categories, status, error } = useSelector((state: RootState) => state.blogs);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [visiblePosts, setVisiblePosts] = useState(9);
+  const [visiblePosts, setVisiblePosts] = useState(6);
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
@@ -62,19 +62,25 @@ const BlogListing: FC = () => {
 
   const handleCategorySelect = (category: string) => {
     if (category === '') {
-      // Clear all selections
+      // Clear all selections and fetch all blogs
       setSelectedCategories([]);
+      dispatch(fetchBlogs());
       return;
     }
 
     setSelectedCategories(prev => {
-      if (prev.includes(category)) {
-        // Remove category if already selected
-        return prev.filter(c => c !== category);
+      const newSelectedCategories = prev.includes(category)
+        ? prev.filter(c => c !== category) // Remove if already selected
+        : [...prev, category];             // Add if not selected
+
+      // After updating the state, fetch blogs with the new tags
+      if (newSelectedCategories.length > 0) {
+        dispatch(fetchBlogsByTags(newSelectedCategories));
       } else {
-        // Add category if not selected
-        return [...prev, category];
+        dispatch(fetchBlogs()); // If no tags selected, fetch all blogs
       }
+
+      return newSelectedCategories;
     });
   };
 
@@ -110,7 +116,7 @@ const BlogListing: FC = () => {
   const hasMorePosts = displayedPosts.length > visiblePosts;
 
   const loadMore = () => {
-    setVisiblePosts(prev => prev + 9);
+    setVisiblePosts(prev => prev + 6);
   };
 
   if (status === 'loading' && !isSearching) {
