@@ -22,7 +22,7 @@ export interface BlogPost {
         medium_url?: string | null;
         dev_to_url?: string | null;
         author_intro?: string | null;
-        slug?: string;
+        slug: string;
     };
     categories: Array<{
         id: number;
@@ -97,10 +97,15 @@ export const fetchBlogBySlug = createAsyncThunk(
                 const data = response.data.data || response.data;
                 if (data) {
                     if (data.attributes) {
-                        return {
+                        const normalizedData = {
                             ...data.attributes,
-                            id: data.id
+                            id: data.id,
+                            blog_author: {
+                                ...data.attributes.blog_author,
+                                slug: data.attributes.blog_author.slug || data.attributes.blog_author.name.toLowerCase().replace(/[^\w]+/g, '-')
+                            }
                         };
+                        return normalizedData;
                     }
                     return data;
                 }
@@ -118,10 +123,15 @@ export const fetchBlogBySlug = createAsyncThunk(
 
             // Normalize the response structure
             if (data.attributes) {
-                return {
+                const normalizedData = {
                     ...data.attributes,
-                    id: data.id
+                    id: data.id,
+                    blog_author: {
+                        ...data.attributes.blog_author,
+                        slug: data.attributes.blog_author.slug || data.attributes.blog_author.name.toLowerCase().replace(/[^\w]+/g, '-')
+                    }
                 };
+                return normalizedData;
             }
             return data;
         } catch (error: any) {
@@ -199,7 +209,7 @@ export const fetchBlogsByAuthorSlug = createAsyncThunk(
     'blogs/fetchBlogsByAuthorSlug',
     async (authorSlug: string, { rejectWithValue }) => {
         try {
-            const response = await axios.get(`http://192.168.1.6:1337/api/blogs?author=${authorSlug}`);
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs?filters[blog_author][slug][$eq]=${authorSlug}`);
             const data = response.data.data || response.data;
 
             if (Array.isArray(data) && data.length > 0) {
@@ -262,7 +272,15 @@ const blogSlice = createSlice({
             })
             .addCase(fetchBlogBySlug.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.currentPost = action.payload;
+                if (action.payload) {
+                    state.currentPost = {
+                        ...action.payload,
+                        blog_author: {
+                            ...action.payload.blog_author,
+                            slug: action.payload.blog_author.slug || action.payload.blog_author.name.toLowerCase().replace(/[^\w]+/g, '-')
+                        }
+                    };
+                }
                 state.error = null;
             })
             .addCase(fetchBlogBySlug.rejected, (state, action) => {

@@ -9,74 +9,13 @@ interface TableOfContentsProps {
     }>;
 }
 
-interface TreeNode {
-    id: string;
-    title: string;
-    level: number;
-    children: TreeNode[];
-}
-
-const buildHeadingTree = (headings: TableOfContentsProps['headings']): TreeNode[] => {
-    const root: TreeNode[] = [];
-    const stack: TreeNode[] = [];
-
-    headings.forEach((heading) => {
-        const node: TreeNode = {
-            ...heading,
-            children: [],
-        };
-
-        while (stack.length > 0 && stack[stack.length - 1].level >= heading.level) {
-            stack.pop();
-        }
-
-        if (stack.length === 0) {
-            root.push(node);
-        } else {
-            stack[stack.length - 1].children.push(node);
-        }
-
-        stack.push(node);
-    });
-
-    return root;
-};
-
-const RenderTreeNode: FC<{ node: TreeNode; activeId: string }> = ({ node, activeId }) => {
-    const isActive = activeId === node.id;
-
-    return (
-        <li className="relative">
-            <Link
-                to={node.id}
-                spy={true}
-                smooth={true}
-                offset={-100}
-                duration={300}
-                isDynamic={true}
-                className={`block py-2 pl-4 cursor-pointer transition-colors duration-300 text-gray-600 hover:text-gray-900 relative ${isActive ? 'text-red-600 font-bold' : ''}`}
-                activeClass="!text-red-600 font-bold before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-red-600"
-                hashSpy={true}
-                spyThrottle={50}
-            >
-                {node.title}
-            </Link>
-            {node.children.length > 0 && (
-                <ul className="ml-4">
-                    {node.children.map((child) => (
-                        <RenderTreeNode key={child.id} node={child} activeId={activeId} />
-                    ))}
-                </ul>
-            )}
-        </li>
-    );
-};
-
 const TableOfContents: FC<TableOfContentsProps> = ({ headings }) => {
-    const tree = buildHeadingTree(headings);
     const [activeId, setActiveId] = useState<string>('');
     const observerRef = useRef<IntersectionObserver | null>(null);
     const headingElementsRef = useRef<{ [key: string]: IntersectionObserverEntry }>({});
+
+    // Filter to only show h2 headings (level 2)
+    const h2Headings = headings.filter(heading => heading.level === 2);
 
     useEffect(() => {
         // Clean up old observers
@@ -84,7 +23,7 @@ const TableOfContents: FC<TableOfContentsProps> = ({ headings }) => {
             observerRef.current.disconnect();
         }
 
-        if (headings.length === 0) return;
+        if (h2Headings.length === 0) return;
 
         // Set up intersection observer for each heading
         const callback: IntersectionObserverCallback = (entries) => {
@@ -109,9 +48,9 @@ const TableOfContents: FC<TableOfContentsProps> = ({ headings }) => {
                 if (firstVisibleHeadingId && firstVisibleHeadingId !== activeId) {
                     setActiveId(firstVisibleHeadingId);
                 }
-            } else if (headings.length > 0 && !activeId) {
+            } else if (h2Headings.length > 0 && !activeId) {
                 // If no headings are visible but we have headings, use the first one
-                setActiveId(headings[0].id);
+                setActiveId(h2Headings[0].id);
             }
         };
 
@@ -125,14 +64,12 @@ const TableOfContents: FC<TableOfContentsProps> = ({ headings }) => {
         observerRef.current = new IntersectionObserver(callback, options);
 
         // Add padding to headings and observe them
-        headings.forEach(heading => {
+        h2Headings.forEach(heading => {
             const element = document.getElementById(heading.id);
             if (element) {
                 // Add padding to improve detection
-                if (element.tagName === 'H1' || element.tagName === 'H2' || element.tagName === 'H3') {
-                    element.style.scrollMarginTop = '100px';
-                    element.style.paddingTop = '20px';
-                }
+                element.style.scrollMarginTop = '100px';
+                element.style.paddingTop = '20px';
 
                 // Observe the heading
                 observerRef.current?.observe(element);
@@ -140,8 +77,8 @@ const TableOfContents: FC<TableOfContentsProps> = ({ headings }) => {
         });
 
         // Set initial active heading
-        if (headings.length > 0 && !activeId) {
-            setActiveId(headings[0].id);
+        if (h2Headings.length > 0 && !activeId) {
+            setActiveId(h2Headings[0].id);
         }
 
         return () => {
@@ -149,9 +86,9 @@ const TableOfContents: FC<TableOfContentsProps> = ({ headings }) => {
                 observerRef.current.disconnect();
             }
         };
-    }, [headings]);
+    }, [h2Headings]);
 
-    if (headings.length === 0) {
+    if (h2Headings.length === 0) {
         return null;
     }
 
@@ -166,8 +103,23 @@ const TableOfContents: FC<TableOfContentsProps> = ({ headings }) => {
                 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
             >
                 <ul className="space-y-1">
-                    {tree.map((node) => (
-                        <RenderTreeNode key={node.id} node={node} activeId={activeId} />
+                    {h2Headings.map((heading) => (
+                        <li key={heading.id} className="relative">
+                            <Link
+                                to={heading.id}
+                                spy={true}
+                                smooth={true}
+                                offset={-100}
+                                duration={300}
+                                isDynamic={true}
+                                className={`block py-2 pl-4 cursor-pointer transition-colors duration-300 text-gray-600 hover:text-gray-900 relative ${activeId === heading.id ? 'text-red-600 font-bold' : ''}`}
+                                activeClass="!text-red-600 font-bold before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-red-600"
+                                hashSpy={true}
+                                spyThrottle={50}
+                            >
+                                {heading.title}
+                            </Link>
+                        </li>
                     ))}
                 </ul>
             </nav>
