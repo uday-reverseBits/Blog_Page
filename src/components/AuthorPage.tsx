@@ -170,82 +170,91 @@ const AuthorPage: FC = () => {
 
     return (
         <div className="container mx-auto px-4 py-12">
-            <div className="max-w-7xl mx-auto">
-                {/* Back to Blog button */}
-                <div className="mb-12">
-                    <Link
-                        to="/"
-                        className="inline-flex items-center px-6 py-2 bg-gray-100 text-black hover:bg-gray-200 transition-colors rounded-md"
+            {/* Back to Blog button */}
+            <div className="mb-12">
+                <Link
+                    to="/"
+                    className="inline-flex items-center px-6 py-2 bg-gray-100 text-black hover:bg-gray-200 transition-colors rounded-md"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-2"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 mr-2"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                        Back to Blog
-                    </Link>
-                </div>
+                        <path
+                            fillRule="evenodd"
+                            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                            clipRule="evenodd"
+                        />
+                    </svg>
+                    Back to Blog
+                </Link>
+            </div>
 
-                {author && (
-                    <>
-                        {/* Author Profile - Horizontal Layout */}
-                        <div className="max-w-4xl mb-16">
-                            <div className="flex items-start gap-8">
-                                {/* Author Avatar */}
-                                <div className="flex-shrink-0">
-                                    <img
-                                        src={`http://192.168.1.6:1337${author.avatar.url}`}
-                                        alt={author.name}
-                                        className="w-32 h-32 rounded-full object-cover"
-                                    />
-                                </div>
-
-                                {/* Author Details */}
-                                <div className="flex-grow">
-                                    {/* Author Name and Social Links */}
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h1 className="text-4xl font-bold text-gray-900">{author.name}</h1>
-                                        <div className="flex items-center gap-3">
-                                            {getSocialLinks().map((link, index) => (
-                                                <a
-                                                    key={index}
-                                                    href={link.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-gray-600 hover:text-red-500 transition-colors p-1"
-                                                    title={link.label}
-                                                >
-                                                    {link.icon}
-                                                </a>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Designation */}
-                                    <div className="text-xl text-gray-600 mb-4">
-                                        {author.designation || "Full-Stack Developer"}
-                                    </div>
-
-                                    {/* Author Description */}
-                                    {author.author_intro && (
-                                        <div className="text-gray-600">
-                                            <p className="text-lg leading-relaxed">{author.author_intro}</p>
-                                        </div>
-                                    )}
-                                </div>
+            {author && (
+                <>
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Desktop Categories - Sidebar */}
+                        <div className="hidden lg:block w-64 flex-shrink-0">
+                            <div className="sticky top-8">
+                                <Tags
+                                    categories={categories}
+                                    selectedCategories={selectedCategories}
+                                    onSelectCategory={handleCategorySelect}
+                                />
                             </div>
                         </div>
 
-                        {/* Author's Posts section */}
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-6">Posts by {author.name}</h2>
+                        {/* Main Content Area */}
+                        <div className="flex-1">
+                            {/* Author Profile - Horizontal Layout */}
+                            <div className="mb-16">
+                                <div className="flex flex-col md:flex-row md:items-start gap-8">
+                                    {/* Author Avatar */}
+                                    <div className="flex-shrink-0 mx-auto md:mx-0">
+                                        <img
+                                            src={`http://192.168.1.6:1337${author.avatar.url}`}
+                                            alt={author.name}
+                                            className="w-32 h-32 rounded-full object-cover"
+                                        />
+                                    </div>
+
+                                    {/* Author Details */}
+                                    <div className="flex-grow">
+                                        {/* Author Name and Social Links */}
+                                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 text-center md:text-left">
+                                            <h1 className="text-4xl font-bold text-gray-900 mb-4 md:mb-0">{author.name}</h1>
+                                            <div className="flex items-center justify-center md:justify-end gap-3">
+                                                {getSocialLinks().map((link, index) => (
+                                                    <a
+                                                        key={index}
+                                                        href={link.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-gray-600 hover:text-red-500 transition-colors p-1"
+                                                        title={link.label}
+                                                    >
+                                                        {link.icon}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Designation */}
+                                        <div className="text-xl text-gray-600 mb-4 text-center md:text-left">
+                                            {author.designation || "Full-Stack Developer"}
+                                        </div>
+
+                                        {/* Author Description */}
+                                        {author.author_intro && (
+                                            <div className="text-gray-600 text-center md:text-left">
+                                                <p className="text-lg leading-relaxed">{author.author_intro}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Mobile Categories */}
                             <div className="lg:hidden mb-8">
@@ -256,67 +265,56 @@ const AuthorPage: FC = () => {
                                 />
                             </div>
 
-                            <div className="flex flex-col lg:flex-row gap-8">
-                                {/* Desktop Categories */}
-                                <div className="hidden lg:block w-64 flex-shrink-0">
-                                    <div className="sticky top-8">
-                                        <Tags
-                                            categories={categories}
-                                            selectedCategories={selectedCategories}
-                                            onSelectCategory={handleCategorySelect}
-                                        />
+                            {/* Posts Section */}
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-6">Posts by {author.name}</h2>
+
+                                {authorPosts.length === 0 ? (
+                                    <div className="text-center py-10">
+                                        <p className="text-gray-500 text-lg">No posts found</p>
                                     </div>
-                                </div>
-
-                                {/* Posts Grid */}
-                                <div className="flex-1">
-                                    {authorPosts.length === 0 ? (
-                                        <div className="text-center py-10">
-                                            <p className="text-gray-500 text-lg">No posts found</p>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                            {authorPosts.slice(0, visiblePosts).map((post) => (
+                                                <Card
+                                                    key={post.id}
+                                                    author={{
+                                                        name: author.name,
+                                                        image: author.avatar?.url ? `http://192.168.1.6:1337${author.avatar.url}` : '/default-avatar.png'
+                                                    }}
+                                                    date={new Date(post.publishedAt).toLocaleDateString('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    })}
+                                                    title={post.title.replace(/^#\s+/, '')}
+                                                    description=""
+                                                    image={post.cover_image?.url ? `http://192.168.1.6:1337${post.cover_image.url}` : '/default-cover.jpg'}
+                                                    categories={post.categories.map(cat => cat.title)}
+                                                    slug={post.slug}
+                                                    authorId={author.id}
+                                                />
+                                            ))}
                                         </div>
-                                    ) : (
-                                        <>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                                {authorPosts.slice(0, visiblePosts).map((post) => (
-                                                    <Card
-                                                        key={post.id}
-                                                        author={{
-                                                            name: author.name,
-                                                            image: author.avatar?.url ? `http://192.168.1.6:1337${author.avatar.url}` : '/default-avatar.png'
-                                                        }}
-                                                        date={new Date(post.publishedAt).toLocaleDateString('en-US', {
-                                                            year: 'numeric',
-                                                            month: 'long',
-                                                            day: 'numeric'
-                                                        })}
-                                                        title={post.title.replace(/^#\s+/, '')}
-                                                        description=""
-                                                        image={post.cover_image?.url ? `http://192.168.1.6:1337${post.cover_image.url}` : '/default-cover.jpg'}
-                                                        categories={post.categories.map(cat => cat.title)}
-                                                        slug={post.slug}
-                                                        authorId={author.id}
-                                                    />
-                                                ))}
-                                            </div>
 
-                                            {hasMorePosts && (
-                                                <div className="flex justify-center mt-8">
-                                                    <button
-                                                        onClick={loadMore}
-                                                        className="px-6 py-2 bg-[#FFE4E6] text-black hover:bg-opacity-80 transition-colors"
-                                                    >
-                                                        Load More
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
+                                        {hasMorePosts && (
+                                            <div className="flex justify-center mt-8">
+                                                <button
+                                                    onClick={loadMore}
+                                                    className="px-6 py-2 bg-[#FFE4E6] text-black hover:bg-opacity-80 transition-colors"
+                                                >
+                                                    Load More
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </div>
-                    </>
-                )}
-            </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
