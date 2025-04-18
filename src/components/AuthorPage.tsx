@@ -203,24 +203,25 @@ const AuthorPage: FC = () => {
                 </Link>
             </div>
 
-            {author && (
-                <>
-                    <div className="flex flex-col lg:flex-row gap-8">
-                        {/* Desktop Categories - Sidebar */}
-                        <div className="hidden lg:block w-64 flex-shrink-0">
-                            <div className="sticky top-8 mt-[280px]">
-                                <Tags
-                                    categories={categories}
-                                    selectedCategories={selectedCategories}
-                                    onSelectCategory={handleCategorySelect}
-                                />
-                            </div>
-                        </div>
+            <div className="flex flex-col lg:flex-row gap-8">
+                {/* Desktop Categories - Sidebar */}
+                <div className="hidden lg:block w-64 flex-shrink-0">
+                    <div className="sticky top-8">
+                        <div className="h-[280px]"></div>
+                        <Tags
+                            categories={categories}
+                            selectedCategories={selectedCategories}
+                            onSelectCategory={handleCategorySelect}
+                        />
+                    </div>
+                </div>
 
-                        {/* Main Content Area */}
-                        <div className="flex-1">
+                {/* Main Content Area */}
+                <div className="flex-1">
+                    {author && (
+                        <>
                             {/* Author Profile - Horizontal Layout */}
-                            <div className="mb-16 lg:pe-28">
+                            <div className="mb-16">
                                 <div className="flex flex-col md:flex-row md:items-start gap-8">
                                     {/* Author Avatar */}
                                     <div className="flex-shrink-0 mx-auto md:mx-0">
@@ -322,10 +323,10 @@ const AuthorPage: FC = () => {
                                     </>
                                 )}
                             </div>
-                        </div>
-                    </div>
-                </>
-            )}
+                        </>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
