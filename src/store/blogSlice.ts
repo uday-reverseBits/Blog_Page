@@ -228,6 +228,28 @@ export const fetchBlogsByAuthorSlug = createAsyncThunk(
     }
 );
 
+export const fetchBlogsByAuthorAndTags = createAsyncThunk(
+    'blogs/fetchBlogsByAuthorAndTags',
+    async ({ authorSlug, tags }: { authorSlug: string; tags: string[] }, { rejectWithValue }) => {
+        try {
+            const tagsParam = tags.length > 0 ? `&tags=${tags.join(',')}` : '';
+            const response = await axios.get(`http://192.168.1.6:1337/api/blogs?author=${authorSlug}${tagsParam}`);
+            const data = response.data.data || response.data;
+
+            if (Array.isArray(data)) {
+                return data;
+            } else {
+                return rejectWithValue('No posts found for this combination');
+            }
+        } catch (error: any) {
+            if (error.response && error.response.data.message) {
+                return rejectWithValue(error.response.data.message);
+            }
+            return rejectWithValue('Failed to fetch filtered author posts');
+        }
+    }
+);
+
 const blogSlice = createSlice({
     name: 'blogs',
     initialState,
@@ -356,6 +378,20 @@ const blogSlice = createSlice({
             .addCase(fetchBlogsByAuthorSlug.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to fetch author posts';
+                state.authorPosts = [];
+            })
+            .addCase(fetchBlogsByAuthorAndTags.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(fetchBlogsByAuthorAndTags.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.authorPosts = action.payload;
+                state.error = null;
+            })
+            .addCase(fetchBlogsByAuthorAndTags.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || 'Failed to fetch filtered author posts';
                 state.authorPosts = [];
             });
     }

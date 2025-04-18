@@ -2,8 +2,9 @@ import { FC, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store/store';
-import { fetchBlogsByAuthorSlug } from '../store/blogSlice';
+import { fetchBlogsByAuthorSlug, fetchCategories, fetchBlogsByAuthorAndTags } from '../store/blogSlice';
 import Card from './card';
+import Tags from './Tags';
 
 interface Author {
     id: number;
@@ -30,13 +31,17 @@ const AuthorPage: FC = () => {
     const { authorSlug } = useParams<{ authorSlug: string }>();
     const navigate = useNavigate();
     const dispatch = useDispatch<AppDispatch>();
-    const { authorPosts, status, error } = useSelector((state: RootState) => state.blogs);
+    const { authorPosts, categories, status, error } = useSelector((state: RootState) => state.blogs);
     const [author, setAuthor] = useState<Author | null>(null);
     const [attemptedLoad, setAttemptedLoad] = useState(false);
     const [visiblePosts, setVisiblePosts] = useState(6);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
     useEffect(() => {
         if (authorSlug) {
+            // Fetch categories for the filter
+            dispatch(fetchCategories());
+            // Fetch initial author posts
             dispatch(fetchBlogsByAuthorSlug(authorSlug))
                 .unwrap()
                 .then((posts) => {
@@ -51,6 +56,37 @@ const AuthorPage: FC = () => {
                 });
         }
     }, [authorSlug, dispatch]);
+
+    // Reset pagination when tags change
+    useEffect(() => {
+        setVisiblePosts(6);
+    }, [selectedCategories]);
+
+    const handleCategorySelect = (category: string) => {
+        if (!authorSlug) return;
+
+        if (category === '') {
+            // Clear all selections and fetch all author posts
+            setSelectedCategories([]);
+            dispatch(fetchBlogsByAuthorSlug(authorSlug));
+            return;
+        }
+
+        setSelectedCategories(prev => {
+            const newSelectedCategories = prev.includes(category)
+                ? prev.filter(c => c !== category) // Remove if already selected
+                : [...prev, category];             // Add if not selected
+
+            // After updating the state, fetch blogs with the new tags
+            if (newSelectedCategories.length > 0) {
+                dispatch(fetchBlogsByAuthorAndTags({ authorSlug, tags: newSelectedCategories }));
+            } else {
+                dispatch(fetchBlogsByAuthorSlug(authorSlug));
+            }
+
+            return newSelectedCategories;
+        });
+    };
 
     const loadMore = () => {
         setVisiblePosts(prev => prev + 6);
@@ -187,51 +223,76 @@ const AuthorPage: FC = () => {
                             </div>
                         </div>
 
-                        {/* Author's Posts */}
+                        {/* Author's Posts with Tags Filter */}
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-6">Posts by {author.name}</h2>
 
-                            {authorPosts.length === 0 ? (
-                                <div className="text-center py-10">
-                                    <p className="text-gray-500 text-lg">No posts found</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                        {authorPosts.slice(0, visiblePosts).map((post) => (
-                                            <Card
-                                                key={post.id}
-                                                author={{
-                                                    name: author.name,
-                                                    image: author.avatar?.url ? `http://192.168.1.6:1337${author.avatar.url}` : '/default-avatar.png'
-                                                }}
-                                                date={new Date(post.publishedAt).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                                title={post.title.replace(/^#\s+/, '')}
-                                                description=""
-                                                image={post.cover_image?.url ? `http://192.168.1.6:1337${post.cover_image.url}` : '/default-cover.jpg'}
-                                                categories={post.categories.map(cat => cat.title)}
-                                                slug={post.slug}
-                                                authorId={author.id}
-                                            />
-                                        ))}
-                                    </div>
+                            {/* Mobile Categories */}
+                            <div className="lg:hidden mb-8">
+                                <Tags
+                                    categories={categories}
+                                    selectedCategories={selectedCategories}
+                                    onSelectCategory={handleCategorySelect}
+                                />
+                            </div>
 
-                                    {hasMorePosts && (
-                                        <div className="flex justify-center mt-8">
-                                            <button
-                                                onClick={loadMore}
-                                                className="px-6 py-2 bg-[#FFE4E6] text-black hover:bg-opacity-80 transition-colors"
-                                            >
-                                                Load More
-                                            </button>
+                            <div className="flex flex-col lg:flex-row gap-8">
+                                {/* Desktop Categories */}
+                                <div className="hidden lg:block w-64 flex-shrink-0">
+                                    <div className="sticky top-8">
+                                        <Tags
+                                            categories={categories}
+                                            selectedCategories={selectedCategories}
+                                            onSelectCategory={handleCategorySelect}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Posts Grid */}
+                                <div className="flex-1">
+                                    {authorPosts.length === 0 ? (
+                                        <div className="text-center py-10">
+                                            <p className="text-gray-500 text-lg">No posts found</p>
                                         </div>
+                                    ) : (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                                {authorPosts.slice(0, visiblePosts).map((post) => (
+                                                    <Card
+                                                        key={post.id}
+                                                        author={{
+                                                            name: author.name,
+                                                            image: author.avatar?.url ? `http://192.168.1.6:1337${author.avatar.url}` : '/default-avatar.png'
+                                                        }}
+                                                        date={new Date(post.publishedAt).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}
+                                                        title={post.title.replace(/^#\s+/, '')}
+                                                        description=""
+                                                        image={post.cover_image?.url ? `http://192.168.1.6:1337${post.cover_image.url}` : '/default-cover.jpg'}
+                                                        categories={post.categories.map(cat => cat.title)}
+                                                        slug={post.slug}
+                                                        authorId={author.id}
+                                                    />
+                                                ))}
+                                            </div>
+
+                                            {hasMorePosts && (
+                                                <div className="flex justify-center mt-8">
+                                                    <button
+                                                        onClick={loadMore}
+                                                        className="px-6 py-2 bg-[#FFE4E6] text-black hover:bg-opacity-80 transition-colors"
+                                                    >
+                                                        Load More
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
-                                </>
-                            )}
+                                </div>
+                            </div>
                         </div>
                     </>
                 )}
