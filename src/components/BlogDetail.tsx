@@ -303,13 +303,13 @@ const BlogDetail: FC = () => {
             </h1>
             {/* Author and Date */}
             <div className="flex items-center justify-center space-x-4 mb-6">
-              <div className="flex items-center">
+              <div className="lg:flex items-center justify-center">
                 <Link to={`/author/${post.blog_author.slug}`}>
                   {post?.blog_author?.avatar?.url ? (
                     <img
                       src={`http://192.168.1.6:1337${post.blog_author.avatar.url}`}
                       alt={post.blog_author.name}
-                      className="w-12 h-12 rounded-full mr-3"
+                      className="w-12 h-12 rounded-full mr-3 inline-block mb-3 lg:mb-0"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
@@ -328,7 +328,7 @@ const BlogDetail: FC = () => {
                     </div>
                   )}
                 </Link>
-                <div>
+                <div className='lg:flex items-center gap-2'>
                   <Link to={`/author/${post.blog_author.slug}`} className="text-gray-800 font-medium block hover:text-red-500">
                     {post.blog_author.name}
                   </Link>
